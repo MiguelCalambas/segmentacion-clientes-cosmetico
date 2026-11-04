@@ -1,0 +1,8 @@
+# Trazabilidad requisito, diseño e implementación
+
+| Requisito | Diseño (Módulo 2) | Implementación | Prueba |
+|---|---|---|---|
+| HU-01 Cargar historial | `POST /api/v1/archivos`; entidades Archivo y Compra | `ArchivoController`, `CargaArchivoServicio`, `LectorComprasCsv` | `LectorComprasCsvTest`; `curl` con los archivos de `datos/` |
+| HU-02 Validar calidad | Entidad Incidencia de calidad | `ValidadorCompras` | `ValidadorComprasTest` (5 casos) |
+| RNF-05 Integridad | Errores sin resultados incompletos | `@Transactional` en `CargaArchivoServicio`; `ManejadorErrores` | Prueba manual: archivo sin columna responde `422` y no guarda nada |
+| RNF-02 Privacidad | Cliente solo con identificador | Entidad `Cliente` y tabla `cliente` sin datos personales | Revisión del esquema (migración V1) |
