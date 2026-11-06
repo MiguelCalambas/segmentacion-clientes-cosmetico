@@ -26,7 +26,7 @@ import com.usc.segmentacion.negocio.modelo.ResultadoDescripciones;
 import com.usc.segmentacion.negocio.servicio.DescripcionServicio;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest
+@SpringBootTest(properties = "ia.proveedor=plantilla")
 @Transactional
 class SegmentacionIntegracionTest {
 
