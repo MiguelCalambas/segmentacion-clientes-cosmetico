@@ -1,5 +1,6 @@
 package com.usc.segmentacion.presentacion.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.usc.segmentacion.negocio.modelo.ConsultaSegmentos;
 import java.math.BigDecimal;
@@ -10,13 +11,17 @@ public record RespuestaSegmentos(
         String estado,
         List<SegmentoDto> segmentos) {
 
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     public record SegmentoDto(
             @JsonProperty("id_segmento") Long idSegmento,
             String etiqueta,
             @JsonProperty("num_clientes") int numClientes,
             double proporcion,
             Estadisticas estadisticas,
-            String descripcion) {
+            String descripcion,
+            @JsonProperty("descripcion_ia") String descripcionIa,
+            @JsonProperty("ideas_campana") List<String> ideasCampana,
+            @JsonProperty("proveedor_ia") String proveedorIa) {
     }
 
     public record Estadisticas(
@@ -29,7 +34,7 @@ public record RespuestaSegmentos(
         List<SegmentoDto> lista = c.segmentos().stream()
                 .map(s -> new SegmentoDto(s.idSegmento(), s.etiqueta(), s.numClientes(), s.proporcion(),
                         new Estadisticas(s.frecuenciaMedia(), s.valorTotalMedio(), s.recenciaMediaDias()),
-                        s.descripcion()))
+                        s.descripcion(), s.descripcionIa(), s.ideasCampana(), s.proveedorDescripcion()))
                 .toList();
         return new RespuestaSegmentos(c.idEjecucion(), c.estado(), lista);
     }

@@ -1,7 +1,9 @@
 package com.usc.segmentacion.presentacion;
 
 import com.usc.segmentacion.negocio.modelo.EstadoEjecucion;
+import com.usc.segmentacion.negocio.servicio.DescripcionServicio;
 import com.usc.segmentacion.negocio.servicio.EjecucionServicio;
+import com.usc.segmentacion.presentacion.dto.RespuestaDescripciones;
 import com.usc.segmentacion.presentacion.dto.RespuestaEjecucion;
 import com.usc.segmentacion.presentacion.dto.RespuestaError;
 import com.usc.segmentacion.presentacion.dto.RespuestaSegmentos;
@@ -29,9 +31,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class EjecucionController {
 
     private final EjecucionServicio servicio;
+    private final DescripcionServicio descripciones;
 
-    public EjecucionController(EjecucionServicio servicio) {
+    public EjecucionController(EjecucionServicio servicio, DescripcionServicio descripciones) {
         this.servicio = servicio;
+        this.descripciones = descripciones;
     }
 
     @Operation(summary = "Inicia una segmentación",
@@ -68,8 +72,9 @@ public class EjecucionController {
     }
 
     @Operation(summary = "Obtiene los segmentos de una ejecución completada",
-            description = "Cada segmento incluye su etiqueta, el número de clientes, sus promedios "
-                    + "y una descripción con el criterio que justifica la etiqueta.")
+            description = "Cada segmento incluye su etiqueta, el número de clientes, sus promedios, "
+                    + "la descripción con el criterio de la etiqueta y, si ya se generaron, "
+                    + "las descripciones e ideas de campaña.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Segmentos de la ejecución"),
             @ApiResponse(responseCode = "404", description = "La ejecución no existe",
@@ -81,5 +86,22 @@ public class EjecucionController {
     public RespuestaSegmentos segmentos(
             @Parameter(description = "Identificador de la ejecución") @PathVariable("id") Long id) {
         return RespuestaSegmentos.desde(servicio.consultar(id));
+    }
+
+    @Operation(summary = "Genera descripciones e ideas de campaña para cada segmento",
+            description = "Usa el proveedor configurado y, si no está disponible, una plantilla de respaldo. "
+                    + "Al proveedor solo se le envían resúmenes agregados por segmento, nunca datos de clientes. "
+                    + "Las ideas son orientativas y no garantizan resultados comerciales.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Descripciones generadas y guardadas"),
+            @ApiResponse(responseCode = "404", description = "La ejecución no existe",
+                    content = @Content(schema = @Schema(implementation = RespuestaError.class))),
+            @ApiResponse(responseCode = "409", description = "La ejecución aún no termina o falló",
+                    content = @Content(schema = @Schema(implementation = RespuestaError.class)))
+    })
+    @PostMapping("/{id}/descripciones")
+    public RespuestaDescripciones describir(
+            @Parameter(description = "Identificador de la ejecución") @PathVariable("id") Long id) {
+        return RespuestaDescripciones.desde(descripciones.describir(id));
     }
 }
