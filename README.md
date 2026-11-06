@@ -7,7 +7,13 @@ MVP: API REST que carga un historial de compras, lo valida y segmenta a los clie
 | Funcionalidad | Estado |
 |---|---|
 | Cargar y validar archivo de compras (HU-01, HU-02) | Implementado |
-| Ejecutar segmentación (HU-05) | Pendiente |
-| Consultar segmentos (HU-06) | Pendiente |
+| Ejecutar segmentación (HU-05) | Implementado |
+| Consultar segmentos (HU-06) | Implementado |
 | Descripciones con IA | Pendiente |
-| Estadísticas descriptivas (HU-04), gráficos (HU-07), exportación (HU-08), autenticación (RNF-01) | Futuro |
+
+## Limitaciones conocidas del MVP
+
+- Una sola técnica de segmentación (K-means) y siempre con las tres variables (frecuencia, valor total y recencia).
+- El número de grupos (k) va de 2 a 10, con 4 por defecto.
+- Las etiquetas de los segmentos se asignan con reglas fijas y explícitas, no con IA.
+- Sin autenticación (RNF-01): futuro.

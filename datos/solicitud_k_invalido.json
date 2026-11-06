@@ -1,0 +1,5 @@
+{
+  "id_archivo": 9,
+  "tecnica": "kmeans",
+  "parametros": { "k": 1 }
+}
