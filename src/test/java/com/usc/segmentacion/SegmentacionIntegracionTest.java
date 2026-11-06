@@ -12,6 +12,7 @@ import com.usc.segmentacion.negocio.modelo.SegmentoConsultado;
 import com.usc.segmentacion.negocio.repositorio.ArchivoCargaRepositorio;
 import com.usc.segmentacion.negocio.repositorio.ClienteRepositorio;
 import com.usc.segmentacion.negocio.repositorio.CompraRepositorio;
+import com.usc.segmentacion.negocio.servicio.DescripcionServicio;
 import com.usc.segmentacion.negocio.servicio.EjecucionServicio;
 import com.usc.segmentacion.negocio.servicio.ProcesadorEjecucion;
 import java.math.BigDecimal;
@@ -21,6 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import com.usc.segmentacion.negocio.modelo.ResultadoDescripciones;
+import com.usc.segmentacion.negocio.servicio.DescripcionServicio;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Transactional
@@ -36,6 +40,8 @@ class SegmentacionIntegracionTest {
     private EjecucionServicio ejecuciones;
     @Autowired
     private ProcesadorEjecucion procesador;
+    @Autowired
+    private DescripcionServicio descripciones;
 
     private void crearClientes(ArchivoCarga archivo, String prefijo, int cantidad,
                                int comprasBase, double valorBase, int diasUltima) {
@@ -69,5 +75,27 @@ class SegmentacionIntegracionTest {
         assertEquals(3, consulta.segmentos().size());
         assertEquals(60, consulta.segmentos().stream().mapToInt(SegmentoConsultado::numClientes).sum());
         consulta.segmentos().forEach(s -> assertFalse(s.descripcion().isBlank()));
+    }
+        @Test
+    void generaLasDescripcionesYLasGuarda() {
+        ArchivoCarga archivo = archivos.save(new ArchivoCarga("prueba-descripciones.csv"));
+        crearClientes(archivo, "A", 20, 10, 100.0, 5);
+        crearClientes(archivo, "B", 20, 2, 40.0, 200);
+        crearClientes(archivo, "C", 20, 4, 400.0, 60);
+        EstadoEjecucion estado = ejecuciones.crear(archivo.getId(), "kmeans", null, 3);
+        procesador.procesar(estado.idEjecucion());
+
+        ResultadoDescripciones resultado = descripciones.describir(estado.idEjecucion());
+
+        assertEquals("plantilla", resultado.proveedor());
+        assertFalse(resultado.generadoPorIa());
+        assertEquals(3, resultado.segmentos().size());
+
+        ConsultaSegmentos consulta = ejecuciones.consultar(estado.idEjecucion());
+        consulta.segmentos().forEach(s -> {
+            assertFalse(s.descripcionIa().isBlank());
+            assertFalse(s.ideasCampana().isEmpty());
+            assertEquals("plantilla", s.proveedorDescripcion());
+        });
     }
 }

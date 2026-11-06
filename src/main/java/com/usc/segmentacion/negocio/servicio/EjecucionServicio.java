@@ -91,11 +91,12 @@ public class EjecucionServicio {
         List<Segmento> lista = segmentos.findByEjecucionIdOrderByIdAsc(idEjecucion);
         int total = lista.stream().mapToInt(Segmento::getNumClientes).sum();
 
-        List<SegmentoConsultado> salida = lista.stream()
+                List<SegmentoConsultado> salida = lista.stream()
                 .map(s -> new SegmentoConsultado(s.getId(), s.getEtiqueta(), s.getNumClientes(),
                         total == 0 ? 0 : Math.round(s.getNumClientes() * 100.0 / total) / 100.0,
                         s.getFrecuenciaMedia(), s.getValorTotalMedio(), s.getRecenciaMediaDias(),
-                        s.getDescripcion()))
+                        s.getDescripcion(), s.getDescripcionIa(), s.ideasComoLista(),
+                        s.getProveedorDescripcion()))
                 .toList();
         return new ConsultaSegmentos(idEjecucion, ejecucion.getEstado(), salida);
     }
