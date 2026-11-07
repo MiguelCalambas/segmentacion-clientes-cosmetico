@@ -27,3 +27,8 @@ curl.exe -s "$base/api/v1/ejecuciones/$($ejecucion.id_ejecucion)"
 Titulo "7. Segmentos obtenidos"
 $segmentos = curl.exe -s "$base/api/v1/ejecuciones/$($ejecucion.id_ejecucion)/segmentos" | ConvertFrom-Json
 $segmentos.segmentos | Select-Object etiqueta, num_clientes, proporcion | Format-Table -AutoSize
+
+Titulo "8. Descripciones e ideas de campana"
+$d = curl.exe -s -X POST "$base/api/v1/ejecuciones/$($ejecucion.id_ejecucion)/descripciones" | ConvertFrom-Json
+Write-Host "Proveedor: $($d.proveedor) | generado por IA: $($d.generado_por_ia) | respaldo: $($d.respaldo)"
+$d.segmentos | ForEach-Object { Write-Host "- $($_.etiqueta): $($_.descripcion)" }
