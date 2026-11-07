@@ -1,0 +1,6 @@
+{
+  "id_archivo": 9,
+  "tecnica": "kmeans",
+  "variables": ["frecuencia", "valor_total", "recencia_dias"],
+  "parametros": { "k": 4 }
+}
