@@ -22,7 +22,10 @@ public class ConfiguracionIA {
             @Value("${ia.gemini.url}") String url,
             @Value("${ia.gemini.clave:}") String clave,
             @Value("${ia.gemini.modelo:}") String modelo,
-            @Value("${ia.gemini.timeout-segundos:15}") int timeoutSegundos,
+            @Value("${ia.gemini.timeout-segundos:15}") int timeoutSegundos, 
+            @Value("${ia.gemini.temperatura:0.4}") double temperatura,
+            @Value("${ia.gemini.max-tokens:4096}") int maxTokens,
+            @Value("${ia.gemini.max-intentos:3}") int maxIntentos,
             AsistentePlantilla plantilla) {
 
         if (ClienteIAGemini.NOMBRE.equalsIgnoreCase(proveedor.trim())) {
@@ -31,7 +34,7 @@ public class ConfiguracionIA {
                 return plantilla;
             }
             registro.info("Proveedor de IA configurado: gemini (modelo {})", modelo);
-            return new ClienteIAGemini(url, clave, modelo, Duration.ofSeconds(timeoutSegundos), Duration.ofSeconds(1));
+        return new ClienteIAGemini(url, clave, modelo, Duration.ofSeconds(timeoutSegundos), Duration.ofSeconds(1), temperatura, maxTokens, maxIntentos);
         }
         registro.info("Proveedor de IA configurado: plantilla (sin IA externa)");
         return plantilla;

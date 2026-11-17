@@ -1,13 +1,9 @@
 package com.usc.segmentacion.presentacion;
 
-import com.usc.segmentacion.negocio.excepcion.DatosInsuficientesException;
-import com.usc.segmentacion.negocio.excepcion.EjecucionNoCompletadaException;
-import com.usc.segmentacion.negocio.excepcion.EstructuraInvalidaException;
-import com.usc.segmentacion.negocio.excepcion.ParametroInvalidoException;
-import com.usc.segmentacion.negocio.excepcion.RecursoNoEncontradoException;
-import com.usc.segmentacion.negocio.excepcion.SinRegistrosValidosException;
-import com.usc.segmentacion.presentacion.dto.RespuestaError;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -17,8 +13,17 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
+import com.usc.segmentacion.negocio.excepcion.DatosInsuficientesException;
+import com.usc.segmentacion.negocio.excepcion.EjecucionNoCompletadaException;
+import com.usc.segmentacion.negocio.excepcion.EstructuraInvalidaException;
+import com.usc.segmentacion.negocio.excepcion.ParametroInvalidoException;
+import com.usc.segmentacion.negocio.excepcion.RecursoNoEncontradoException;
+import com.usc.segmentacion.negocio.excepcion.SinRegistrosValidosException;
+import com.usc.segmentacion.presentacion.dto.RespuestaError;
+
 @RestControllerAdvice
 public class ManejadorErrores {
+private static final Logger registro = LoggerFactory.getLogger(ManejadorErrores.class);
 
     // ----- 400: la solicitud está mal formada -----
 
@@ -91,6 +96,12 @@ public class ManejadorErrores {
                 .collect(Collectors.joining("; "));
         return respuesta(422, "solicitud_invalida", detalle);
     }
+    
+    @ExceptionHandler(Exception.class)
+public ResponseEntity<RespuestaError> manejarErrorInesperado(Exception e) {
+    registro.error("Error inesperado", e);
+    return respuesta(500, "error_interno", "Ocurrió un error inesperado. Intente de nuevo más tarde.");
+}
 
     private static ResponseEntity<RespuestaError> respuesta(int codigo, String error, String detalle) {
         return ResponseEntity.status(codigo).body(new RespuestaError(error, detalle));
