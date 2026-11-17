@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -97,11 +98,16 @@ private static final Logger registro = LoggerFactory.getLogger(ManejadorErrores.
         return respuesta(422, "solicitud_invalida", detalle);
     }
     
-    @ExceptionHandler(Exception.class)
-public ResponseEntity<RespuestaError> manejarErrorInesperado(Exception e) {
-    registro.error("Error inesperado", e);
-    return respuesta(500, "error_interno", "Ocurrió un error inesperado. Intente de nuevo más tarde.");
-}
+   @ExceptionHandler(Exception.class)
+    public ResponseEntity<RespuestaError> errorInesperado(Exception e) {
+        if (e instanceof ErrorResponse errorSpring) {
+            // Errores HTTP propios de Spring (405, 415, 404...): se conserva su código
+            return respuesta(errorSpring.getStatusCode().value(), "solicitud_no_valida",
+                    "La solicitud no pudo ser atendida");
+        }
+        registro.error("Error inesperado", e);
+        return respuesta(500, "error_interno", "Ocurrió un error inesperado. Intente de nuevo más tarde.");
+    }
 
     private static ResponseEntity<RespuestaError> respuesta(int codigo, String error, String detalle) {
         return ResponseEntity.status(codigo).body(new RespuestaError(error, detalle));

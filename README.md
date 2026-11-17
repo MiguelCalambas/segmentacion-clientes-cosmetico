@@ -17,6 +17,8 @@ Cargar un archivo de compras, validarlo, segmentar a los clientes, consultar los
 | Documentación interactiva (Swagger UI) | Implementado |
 | Contenedorización con Docker Compose | Implementado |
 
+![CI](https://github.com/MiguelCalambas/segmentacion-clientes-cosmetico/actions/workflows/ci.yml/badge.svg)
+
 ## Cómo ejecutar el proyecto
 
 Requisito: Docker Desktop.
