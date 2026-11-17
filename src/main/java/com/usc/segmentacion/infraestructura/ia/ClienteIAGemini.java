@@ -34,7 +34,10 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
     public static final String NOMBRE = "gemini";
 
     private static final Logger registro = LoggerFactory.getLogger(ClienteIAGemini.class);
-    private static final int MAXIMO_INTENTOS = 3; // 1 intento y 2 reintentos
+    public static final double TEMPERATURA_POR_DEFECTO = 0.4;
+    public static final int MAX_TOKENS_POR_DEFECTO = 4096;
+    public static final int MAX_INTENTOS_POR_DEFECTO = 3; // 1 intento y 2 reintentos
+    private static final int MAXIMO_IDEAS_CAMPANA = 5;
 
     private static final String INSTRUCCION = """
             Eres un analista de marketing del sector cosmético. Recibirás resúmenes agregados de segmentos \
@@ -47,8 +50,17 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
     private final RestClient cliente;
     private final String modelo;
     private final Duration pausaBase;
+    private final double temperatura;
+    private final int maxTokens;
+    private final int maxIntentos;
 
     public ClienteIAGemini(String urlBase, String clave, String modelo, Duration tiempoLimite, Duration pausaBase) {
+        this(urlBase, clave, modelo, tiempoLimite, pausaBase,
+                TEMPERATURA_POR_DEFECTO, MAX_TOKENS_POR_DEFECTO, MAX_INTENTOS_POR_DEFECTO);
+    }
+
+    public ClienteIAGemini(String urlBase, String clave, String modelo, Duration tiempoLimite, Duration pausaBase,
+                           double temperatura, int maxTokens, int maxIntentos) {
         HttpClient http = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(tiempoLimite)
@@ -62,6 +74,9 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
                 .build();
         this.modelo = modelo;
         this.pausaBase = pausaBase;
+        this.temperatura = temperatura;
+        this.maxTokens = maxTokens;
+        this.maxIntentos = maxIntentos;
     }
 
     @Override
@@ -74,7 +89,7 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
         Solicitud cuerpo = new Solicitud(
                 new Contenido(List.of(new Parte(INSTRUCCION))),
                 List.of(new Contenido(List.of(new Parte(armarTexto(resumenes))))),
-                new Configuracion(0.4, 4096, "application/json"));
+                new Configuracion(temperatura, maxTokens, "application/json"));
         return interpretar(llamarConReintentos(cuerpo));
     }
 
@@ -86,16 +101,16 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
                 return llamar(cuerpo);
             } catch (RestClientResponseException e) {
                 int codigo = e.getStatusCode().value();
-                if (!esReintentable(codigo) || intento >= MAXIMO_INTENTOS) {
+                if (!esReintentable(codigo) || intento >= maxIntentos) {
                     throw new ProveedorIANoDisponibleException("Gemini respondió con el código " + codigo, e);
                 }
-                registro.warn("Gemini respondió {} (intento {} de {}): se reintenta", codigo, intento, MAXIMO_INTENTOS);
+                registro.warn("Gemini respondió {} (intento {} de {}): se reintenta", codigo, intento, maxIntentos);
             } catch (ResourceAccessException e) {
-                if (intento >= MAXIMO_INTENTOS) {
+                if (intento >= maxIntentos) {
                     throw new ProveedorIANoDisponibleException(
                             "No se pudo conectar con Gemini o se agotó el tiempo de espera", e);
                 }
-                registro.warn("Sin respuesta de Gemini (intento {} de {}): se reintenta", intento, MAXIMO_INTENTOS);
+                registro.warn("Sin respuesta de Gemini (intento {} de {}): se reintenta", intento, maxIntentos);
             }
             pausar(intento);
         }
@@ -170,7 +185,7 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
                 List<String> ideasTexto = ideas.stream()
                         .filter(String.class::isInstance)
                         .map(String.class::cast)
-                        .limit(5)
+                        .limit(MAXIMO_IDEAS_CAMPANA)
                         .toList();
                 resultado.add(new DescripcionSegmento(id.longValue(), descripcion.trim(), ideasTexto));
             }

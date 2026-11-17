@@ -32,6 +32,7 @@ public class CargaArchivoServicio {
 
     private static final int MAXIMO_DETALLES = 20;
     private static final int LONGITUD_DETALLE = 500;
+    private static final int LONGITUD_NOMBRE = 255;
 
     private final LectorCompras lector;
     private final ValidadorCompras validador;
@@ -54,6 +55,7 @@ public class CargaArchivoServicio {
 
     @Transactional
     public ResultadoCarga cargar(String nombreArchivo, InputStream contenido) {
+        nombreArchivo = limpiarNombre(nombreArchivo);
         List<FilaCruda> filas = lector.leer(contenido);
         ResultadoValidacion resultado = validador.validar(filas);
 
@@ -114,7 +116,19 @@ public class CargaArchivoServicio {
         compras.saveAll(lista);
     }
 
+/** Deja solo el nombre final del archivo, sin ruta ni caracteres de control, y lo limita en longitud. */
+private static String limpiarNombre(String nombre) {
+    String limpio = nombre.replace('\\', '/');
+    limpio = limpio.substring(limpio.lastIndexOf('/') + 1);
+    limpio = limpio.replaceAll("\\p{Cntrl}", "").trim();
+    if (limpio.isEmpty()) {
+        limpio = "archivo.csv";
+    }
+    return limpio.length() > LONGITUD_NOMBRE ? limpio.substring(0, LONGITUD_NOMBRE) : limpio;
+}
+    
     private static String recortar(String texto) {
         return texto.length() <= LONGITUD_DETALLE ? texto : texto.substring(0, LONGITUD_DETALLE);
+        
     }
 }
