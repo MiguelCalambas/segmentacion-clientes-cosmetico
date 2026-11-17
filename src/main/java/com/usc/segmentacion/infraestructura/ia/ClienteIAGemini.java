@@ -34,9 +34,10 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
     public static final String NOMBRE = "gemini";
 
     private static final Logger registro = LoggerFactory.getLogger(ClienteIAGemini.class);
-        public static final double TEMPERATURA_POR_DEFECTO = 0.4;
+    public static final double TEMPERATURA_POR_DEFECTO = 0.4;
     public static final int MAX_TOKENS_POR_DEFECTO = 4096;
     public static final int MAX_INTENTOS_POR_DEFECTO = 3; // 1 intento y 2 reintentos
+    private static final int MAXIMO_IDEAS_CAMPANA = 5;
 
     private static final String INSTRUCCION = """
             Eres un analista de marketing del sector cosmético. Recibirás resúmenes agregados de segmentos \
@@ -46,7 +47,7 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
             Responde SOLO con JSON válido, sin texto adicional ni formato Markdown, con esta forma exacta: \
             {"segmentos":[{"id_segmento":1,"descripcion":"...","ideas_campana":["...","..."]}]}""";
 
-        private final RestClient cliente;
+    private final RestClient cliente;
     private final String modelo;
     private final Duration pausaBase;
     private final double temperatura;
@@ -184,7 +185,7 @@ public class ClienteIAGemini implements AsistenteDescriptivo {
                 List<String> ideasTexto = ideas.stream()
                         .filter(String.class::isInstance)
                         .map(String.class::cast)
-                        .limit(5)
+                        .limit(MAXIMO_IDEAS_CAMPANA)
                         .toList();
                 resultado.add(new DescripcionSegmento(id.longValue(), descripcion.trim(), ideasTexto));
             }
