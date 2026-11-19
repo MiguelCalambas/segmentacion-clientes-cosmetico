@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Segmentación de clientes</title>
+<style>
+  :root {
+    --fondo: #faf7f8;
+    --tarjeta: #ffffff;
+    --texto: #2b2328;
+    --suave: #6f6269;
+    --borde: #e6dde1;
+    --acento: #7b3f61;
+    --acento-texto: #ffffff;
+    --acento-suave: #f1e4eb;
+    --ok: #2f7d4f;
+    --error: #b3261e;
+    --error-fondo: #fbe9e7;
+    --aviso: #8a5a00;
+    --aviso-fondo: #fff4d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fondo: #161215;
+      --tarjeta: #211b20;
+      --texto: #f1e9ee;
+      --suave: #b3a5ac;
+      --borde: #3a3037;
+      --acento: #d59abb;
+      --acento-texto: #2a1420;
+      --acento-suave: #3a2733;
+      --ok: #6fcf97;
+      --error: #ff8a80;
+      --error-fondo: #3b1f1d;
+      --aviso: #ffd37a;
+      --aviso-fondo: #3a2f12;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  .contenedor { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+  header h1 { margin: 0 0 4px; font-size: 1.7rem; }
+  header p { margin: 0 0 24px; color: var(--suave); }
+  .paso {
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .paso.bloqueado { opacity: .5; }
+  .paso h2 { margin: 0 0 4px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+  .numero {
+    display: inline-grid; place-items: center;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--acento); color: var(--acento-texto);
+    font-size: .85rem; font-weight: 700;
+  }
+  .paso.hecho .numero { background: var(--ok); }
+  .ayuda { margin: 0 0 14px; color: var(--suave); font-size: .92rem; }
+  .fila { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+  .fila > div { min-width: 0; max-width: 100%; }
+  input[type="file"] { max-width: 100%; }
+  label { display: block; font-size: .85rem; color: var(--suave); margin-bottom: 4px; }
+  input[type="file"], select {
+    font: inherit; color: inherit; background: var(--fondo);
+    border: 1px solid var(--borde); border-radius: 8px; padding: 8px 10px;
+  }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--acento); background: var(--acento); color: var(--acento-texto);
+    border-radius: 8px; padding: 9px 16px;
+  }
+  button.secundario { background: transparent; color: var(--acento); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  .mensaje { margin-top: 14px; padding: 10px 12px; border-radius: 8px; font-size: .92rem; }
+  .mensaje.error { background: var(--error-fondo); color: var(--error); }
+  .mensaje.info { background: var(--acento-suave); color: var(--texto); }
+  .mensaje.aviso { background: var(--aviso-fondo); color: var(--aviso); }
+  .mensaje:empty { display: none; }
+  .resumen { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .dato {
+    border: 1px solid var(--borde); border-radius: 10px; padding: 8px 14px; min-width: 120px;
+  }
+  .dato b { display: block; font-size: 1.25rem; }
+  .dato span { font-size: .8rem; color: var(--suave); }
+  ul.incidencias { margin: 10px 0 0; padding-left: 20px; color: var(--suave); font-size: .9rem; }
+  .segmentos { display: grid; gap: 14px; margin-top: 16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .segmento { border: 1px solid var(--borde); border-radius: 12px; padding: 16px; }
+  .segmento h3 { margin: 0 0 2px; font-size: 1.05rem; color: var(--acento); }
+  .segmento .clientes { color: var(--suave); font-size: .88rem; margin-bottom: 8px; }
+  .barra { height: 8px; background: var(--acento-suave); border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
+  .barra > div { height: 100%; background: var(--acento); }
+  dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: .9rem; }
+  dt { color: var(--suave); }
+  dd { margin: 0; font-weight: 600; text-align: right; }
+  .criterio { margin: 12px 0 0; font-size: .88rem; color: var(--suave); }
+  .ia { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--borde); font-size: .92rem; }
+  .ia h4 { margin: 0 0 4px; font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); }
+  .ia ul { margin: 6px 0 0; padding-left: 18px; }
+  .etiqueta-proveedor {
+    display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 99px;
+    background: var(--acento-suave); color: var(--texto); font-size: .72rem; text-transform: none; letter-spacing: 0;
+  }
+  .acciones { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
+  footer { margin-top: 24px; font-size: .85rem; color: var(--suave); text-align: center; }
+  footer a { color: var(--acento); }
+  .girando::after {
+    content: ""; display: inline-block; width: 12px; height: 12px; margin-left: 8px;
+    border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+    animation: gira .8s linear infinite; vertical-align: -2px;
+  }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .girando::after { animation: none; } }
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <header>
+    <h1>Segmentación de clientes</h1>
+    <p>Sube el historial de compras, agrupa a tus clientes con K-means y obtén ideas de campaña para cada segmento.</p>
+  </header>
+
+  <noscript><div class="mensaje error">Esta página necesita JavaScript.</div></noscript>
+
+  <section class="paso" id="paso1" aria-labelledby="t1">
+    <h2 id="t1"><span class="numero">1</span> Cargar el historial de compras</h2>
+    <p class="ayuda">Archivo .csv de hasta 10 MB con las columnas id_compra, id_cliente, fecha_compra (AAAA-MM-DD) y valor_compra.</p>
+    <div class="fila">
+      <div>
+        <label for="archivo">Archivo CSV</label>
+        <input type="file" id="archivo" accept=".csv,text/csv">
+      </div>
+      <button type="button" id="btnCargar">Cargar y validar</button>
+    </div>
+    <div class="mensaje" id="msg1" role="status" aria-live="polite"></div>
+    <div id="resultadoCarga"></div>
+  </section>
+
+  <section class="paso bloqueado" id="paso2" aria-labelledby="t2">
+    <h2 id="t2"><span class="numero">2</span> Segmentar a los clientes</h2>
+    <p class="ayuda">Se agrupan por frecuencia de compra, valor total gastado y días desde la última compra.</p>
+    <div class="fila">
+      <div>
+        <label for="k">Número de segmentos (k)</label>
+        <select id="k"></select>
+      </div>
+      <button type="button" id="btnSegmentar" disabled>Segmentar</button>
+    </div>
+    <div class="mensaje" id="msg2" role="status" aria-live="polite"></div>
+    <div class="segmentos" id="segmentos"></div>
+  </section>
+
+  <section class="paso bloqueado" id="paso3" aria-labelledby="t3">
+    <h2 id="t3"><span class="numero">3</span> Descripciones e ideas de campaña</h2>
+    <p class="ayuda">A la IA solo se le envían promedios y conteos por segmento, nunca datos de clientes. Las ideas son orientativas y no garantizan resultados.</p>
+    <div class="acciones">
+      <button type="button" id="btnDescribir" disabled>Generar con IA</button>
+      <button type="button" id="btnExportar" class="secundario" disabled>Descargar resultados (CSV)</button>
+    </div>
+    <div class="mensaje" id="msg3" role="status" aria-live="polite"></div>
+  </section>
+
+  <footer>
+    API interactiva: <a href="/swagger-ui/index.html">Swagger</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var MAX_BYTES = 10 * 1024 * 1024;
+  var estado = { idArchivo: null, idEjecucion: null, segmentos: [] };
+
+  function $(id) { return document.getElementById(id); }
+
+  // Los textos de la API (y sobre todo los de la IA) se insertan siempre con textContent, nunca como HTML.
+  function el(etiqueta, clase, texto) {
+    var nodo = document.createElement(etiqueta);
+    if (clase) nodo.className = clase;
+    if (texto !== undefined && texto !== null) nodo.textContent = texto;
+    return nodo;
+  }
+
+  function numero(valor, decimales) {
+    if (valor === null || valor === undefined || valor === '') return '—';
+    return Number(valor).toLocaleString('es-CO', { maximumFractionDigits: decimales === undefined ? 2 : decimales });
+  }
+
+  function mostrar(id, tipo, texto) {
+    var caja = $(id);
+    caja.className = texto ? 'mensaje ' + tipo : 'mensaje';
+    caja.textContent = texto || '';
+  }
+
+  function ocupado(boton, activo, textoActivo) {
+    if (activo) {
+      boton.dataset.texto = boton.textContent;
+      boton.textContent = textoActivo;
+      boton.classList.add('girando');
+      boton.disabled = true;
+    } else {
+      boton.textContent = boton.dataset.texto || boton.textContent;
+      boton.classList.remove('girando');
+    }
+  }
+
+  function habilitarPaso(id, habilitado) {
+    $(id).classList.toggle('bloqueado', !habilitado);
+  }
+
+  async function api(ruta, opciones) {
+    var respuesta;
+    try {
+      respuesta = await fetch(ruta, opciones);
+    } catch (e) {
+      throw new Error('No se pudo conectar con el servidor. Si acaba de abrir la página, espere un minuto y reintente.');
+    }
+    var cuerpo = null;
+    try { cuerpo = await respuesta.json(); } catch (e) { /* respuesta sin JSON */ }
+    if (!respuesta.ok) {
+      var detalle = cuerpo && cuerpo.detalle ? cuerpo.detalle : 'Error ' + respuesta.status;
+      throw new Error(detalle);
+    }
+    return cuerpo;
+  }
+
+  // ---------- Paso 1: carga ----------
+  async function cargar() {
+    var archivo = $('archivo').files[0];
+    mostrar('msg1', 'error', '');
+    if (!archivo) { mostrar('msg1', 'error', 'Seleccione un archivo .csv.'); return; }
+    if (!/\.csv$/i.test(archivo.name)) { mostrar('msg1', 'error', 'El archivo debe ser .csv.'); return; }
+    if (archivo.size > MAX_BYTES) { mostrar('msg1', 'error', 'El archivo supera el máximo de 10 MB.'); return; }
+
+    var boton = $('btnCargar');
+    ocupado(boton, true, 'Cargando');
+    try {
+      var datos = new FormData();
+      datos.append('archivo', archivo);
+      var r = await api('/api/v1/archivos', { method: 'POST', body: datos });
+      estado.idArchivo = r.id_archivo;
+      estado.idEjecucion = null;
+      estado.segmentos = [];
+      limpiarResultados();
+      pintarCarga(r);
+      $('paso1').classList.add('hecho');
+      habilitarPaso('paso2', true);
+      $('btnSegmentar').disabled = false;
+    } catch (e) {
+      mostrar('msg1', 'error', e.message);
+    } finally {
+      ocupado(boton, false);
+      boton.disabled = false;
+    }
+  }
+
+  function pintarCarga(r) {
+    var zona = $('resultadoCarga');
+    zona.textContent = '';
+    var resumen = el('div', 'resumen');
+    [[r.registros_leidos, 'registros leídos'], [r.registros_validos, 'registros válidos'],
+     [r.estado, 'estado']].forEach(function (par) {
+      var dato = el('div', 'dato');
+      dato.appendChild(el('b', null, typeof par[0] === 'number' ? numero(par[0], 0) : String(par[0]).replace(/_/g, ' ')));
+      dato.appendChild(el('span', null, par[1]));
+      resumen.appendChild(dato);
+    });
+    zona.appendChild(resumen);
+    if (r.incidencias && r.incidencias.length) {
+      var lista = el('ul', 'incidencias');
+      r.incidencias.forEach(function (i) {
+        lista.appendChild(el('li', null, numero(i.cantidad, 0) + ' × ' + String(i.tipo).replace(/_/g, ' ')));
+      });
+      zona.appendChild(el('p', 'ayuda', 'Incidencias de calidad detectadas:'));
+      zona.appendChild(lista);
+    }
+  }
+
+  function limpiarResultados() {
+    $('segmentos').textContent = '';
+    mostrar('msg2', 'info', '');
+    mostrar('msg3', 'info', '');
+    $('paso2').classList.remove('hecho');
+    $('paso3').classList.remove('hecho');
+    habilitarPaso('paso3', false);
+    $('btnDescribir').disabled = true;
+    $('btnExportar').disabled = true;
+  }
+
+  // ---------- Paso 2: segmentación ----------
+  async function segmentar() {
+    mostrar('msg2', 'error', '');
+    var boton = $('btnSegmentar');
+    ocupado(boton, true, 'Segmentando');
+    try {
+      var k = parseInt($('k').value, 10);
+      var creada = await api('/api/v1/ejecuciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_archivo: estado.idArchivo,
+          tecnica: 'kmeans',
+          variables: ['frecuencia', 'valor_total', 'recencia_dias'],
+          parametros: { k: k }
+        })
+      });
+      estado.idEjecucion = creada.id_ejecucion;
+      await esperarFin(creada.id_ejecucion);
+      await cargarSegmentos();
+      $('paso2').classList.add('hecho');
+      habilitarPaso('paso3', true);
+      $('btnDescribir').disabled = false;
+      $('btnExportar').disabled = false;
+    } catch (e) {
+      mostrar('msg2', 'error', e.message);
+    } finally {
+      ocupado(boton, false);
+      boton.disabled = false;
+    }
+  }
+
+  function pausa(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+
+  async function esperarFin(id) {
+    for (var intento = 0; intento < 60; intento++) {
+      var e = await api('/api/v1/ejecuciones/' + id);
+      if (e.estado === 'completada') return;
+      if (e.estado === 'fallida') throw new Error(e.mensaje_error || 'La segmentación falló.');
+      await pausa(1000);
+    }
+    throw new Error('La segmentación tarda más de lo esperado. Consulte el estado más tarde.');
+  }
+
+  async function cargarSegmentos() {
+    var r = await api('/api/v1/ejecuciones/' + estado.idEjecucion + '/segmentos');
+    estado.segmentos = r.segmentos || [];
+    pintarSegmentos();
+  }
+
+  function pintarSegmentos() {
+    var zona = $('segmentos');
+    zona.textContent = '';
+    estado.segmentos.forEach(function (s) {
+      var tarjeta = el('article', 'segmento');
+      tarjeta.appendChild(el('h3', null, s.etiqueta));
+      tarjeta.appendChild(el('div', 'clientes',
+        numero(s.num_clientes, 0) + ' clientes · ' + numero(s.proporcion * 100, 1) + ' % del total'));
+      var barra = el('div', 'barra');
+      var relleno = el('div');
+      relleno.style.width = Math.max(2, Math.min(100, s.proporcion * 100)) + '%';
+      barra.appendChild(relleno);
+      tarjeta.appendChild(barra);
+
+      var lista = el('dl');
+      var est = s.estadisticas || {};
+      [['Compras promedio', numero(est.frecuencia_media, 1)],
+       ['Gasto total promedio', numero(est.valor_total_medio, 2)],
+       ['Días desde la última compra', numero(est.recencia_media_dias, 0)]].forEach(function (par) {
+        lista.appendChild(el('dt', null, par[0]));
+        lista.appendChild(el('dd', null, par[1]));
+      });
+      tarjeta.appendChild(lista);
+      if (s.descripcion) tarjeta.appendChild(el('p', 'criterio', s.descripcion));
+
+      if (s.descripcion_ia) {
+        var ia = el('div', 'ia');
+        var titulo = el('h4', null, 'Descripción');
+        if (s.proveedor_ia) titulo.appendChild(el('span', 'etiqueta-proveedor', s.proveedor_ia));
+        ia.appendChild(titulo);
+        ia.appendChild(el('p', null, s.descripcion_ia));
+        if (s.ideas_campana && s.ideas_campana.length) {
+          ia.appendChild(el('h4', null, 'Ideas de campaña'));
+          var ul = el('ul');
+          s.ideas_campana.forEach(function (idea) { ul.appendChild(el('li', null, idea)); });
+          ia.appendChild(ul);
+        }
+        tarjeta.appendChild(ia);
+      }
+      zona.appendChild(tarjeta);
+    });
+  }
+
+  // ---------- Paso 3: descripciones ----------
+  async function describir() {
+    mostrar('msg3', 'error', '');
+    var boton = $('btnDescribir');
+    ocupado(boton, true, 'Generando');
+    try {
+      var r = await api('/api/v1/ejecuciones/' + estado.idEjecucion + '/descripciones', { method: 'POST' });
+      await cargarSegmentos();
+      if (r.respaldo) {
+        mostrar('msg3', 'aviso', 'El proveedor de IA no respondió; se usó la plantilla de respaldo.');
+      } else if (r.generado_por_ia) {
+        mostrar('msg3', 'info', 'Descripciones generadas con ' + r.proveedor + '. Revíselas antes de usarlas.');
+      } else {
+        mostrar('msg3', 'info', 'Descripciones generadas con la plantilla (sin IA externa).');
+      }
+      $('paso3').classList.add('hecho');
+    } catch (e) {
+      mostrar('msg3', 'error', e.message);
+    } finally {
+      ocupado(boton, false);
+      boton.disabled = false;
+    }
+  }
+
+  // ---------- Exportar ----------
+  // Separador ";" y decimales con coma: es lo que Excel en configuración regional de Colombia abre sin ajustes.
+  function celda(valor) {
+    var texto = valor === null || valor === undefined ? '' : String(valor);
+    // Evita que Excel interprete el texto como fórmula.
+    if (/^[=+\-@\t\r]/.test(texto)) texto = "'" + texto;
+    return '"' + texto.replace(/"/g, '""') + '"';
+  }
+
+  function decimal(valor, decimales) {
+    if (valor === null || valor === undefined) return '';
+    return Number(valor).toFixed(decimales).replace('.', ',');
+  }
+
+  function exportar() {
+    var cabecera = ['id_segmento', 'etiqueta', 'num_clientes', 'proporcion_pct', 'frecuencia_media',
+                    'valor_total_medio', 'recencia_media_dias', 'descripcion', 'descripcion_ia',
+                    'ideas_campana', 'proveedor_ia'];
+    var filas = [cabecera.map(celda).join(';')];
+    estado.segmentos.forEach(function (s) {
+      var est = s.estadisticas || {};
+      filas.push([
+        s.id_segmento, s.etiqueta, s.num_clientes, decimal(s.proporcion * 100, 1),
+        decimal(est.frecuencia_media, 2), decimal(est.valor_total_medio, 2), decimal(est.recencia_media_dias, 1),
+        s.descripcion, s.descripcion_ia, (s.ideas_campana || []).join(' | '), s.proveedor_ia
+      ].map(celda).join(';'));
+    });
+    var blob = new Blob(['﻿' + filas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var enlace = document.createElement('a');
+    enlace.href = URL.createObjectURL(blob);
+    enlace.download = 'segmentos_ejecucion_' + estado.idEjecucion + '.csv';
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    setTimeout(function () { URL.revokeObjectURL(enlace.href); }, 1000);
+  }
+
+  // ---------- Inicio ----------
+  (function iniciar() {
+    var selector = $('k');
+    for (var i = 2; i <= 10; i++) {
+      var opcion = document.createElement('option');
+      opcion.value = i;
+      opcion.textContent = i;
+      if (i === 4) opcion.selected = true;
+      selector.appendChild(opcion);
+    }
+    $('btnCargar').addEventListener('click', cargar);
+    $('btnSegmentar').addEventListener('click', segmentar);
+    $('btnDescribir').addEventListener('click', describir);
+    $('btnExportar').addEventListener('click', exportar);
+  })();
+})();
+</script>
+</body>
+</html>
